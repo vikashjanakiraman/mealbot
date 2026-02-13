@@ -1,4 +1,7 @@
 from app.schemas.schemas import UserProfile, MealPlanResponse
+from sqlalchemy.orm import Session
+from app.models.models import User, MealPlan
+
 
 def generate_basic_meal_plan(user: UserProfile) -> MealPlanResponse:
     """
@@ -9,6 +12,7 @@ def generate_basic_meal_plan(user: UserProfile) -> MealPlanResponse:
     
     # Calculate base calories based on goal
     if user.goal == "weight_loss":
+
         base_calories = 1800
     elif user.goal == "muscle_gain":
         base_calories = 2500
@@ -44,3 +48,49 @@ def generate_basic_meal_plan(user: UserProfile) -> MealPlanResponse:
         dinner=dinner,
         total_calories=base_calories
     )
+
+
+
+def create_or_get_user(db: Session, user_data):
+    existing_user = None
+
+    if user_data.phone_number:
+        existing_user = db.query(User).filter(
+            User.phone_number == user_data.phone_number
+        ).first()
+
+    if existing_user:
+        return existing_user
+
+    new_user = User(
+        name=user_data.name,
+        age=user_data.age,
+        weight=user_data.weight,
+        height=user_data.height,
+        goal=user_data.goal,
+        diet_type=user_data.diet_type,
+        phone_number=user_data.phone_number
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return new_user
+  
+
+
+def save_meal_plan(db: Session, user_id: int, plan):
+    db_meal = MealPlan(
+        user_id=user_id,
+        breakfast=plan.breakfast,
+        lunch=plan.lunch,
+        dinner=plan.dinner,
+        total_calories=plan.total_calories
+    )
+
+    db.add(db_meal)
+    db.commit()
+    db.refresh(db_meal)
+
+    return db_meal

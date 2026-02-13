@@ -1,6 +1,12 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey
 from sqlalchemy.orm import relationship
 from app.database import Base
+from sqlalchemy.sql import func
+from sqlalchemy import DateTime
+
+created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 
 class User(Base):
     __tablename__ = "users"
@@ -26,23 +32,16 @@ class User(Base):
     # Relationship to meal plans
     meal_plans = relationship("MealPlan", back_populates="user")
 
-
 class MealPlan(Base):
     __tablename__ = "meal_plans"
-    
-    # Primary key
+
     id = Column(Integer, primary_key=True, index=True)
-    
-    # Foreign key to user
-    user_id = Column(Integer, ForeignKey("users.id"))
-    
-    # Meal plan details (4 attributes from schemas)
-    breakfast = Column(String)
-    lunch = Column(String)
-    dinner = Column(String)
+    breakfast = Column(String, nullable=False)
+    lunch = Column(String, nullable=False)
+    dinner = Column(String, nullable=False)
     total_calories = Column(Integer)
     
-    # TOTAL: 6 attributes (id + user_id + 4 from schemas)
-    
-    # Relationship back to user
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", back_populates="meal_plans")

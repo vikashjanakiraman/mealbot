@@ -10,10 +10,15 @@ from app.database import engine, get_db, Base
 from app.models.models import User, MealPlan
 
 # Import Pydantic schemas
-from app.schemas.schemas import UserProfile, MealPlanResponse
+from app.schemas.schemas import UserProfile, MealPlanResponse, MealPlanComplete
 
 # Import services
-from app.services.services import generate_basic_meal_plan
+from app.services.services import (
+    generate_basic_meal_plan,
+    create_or_get_user,
+    save_meal_plan
+)
+
 
 # Create all tables in database
 print("🔧 Creating database tables...")
@@ -38,81 +43,20 @@ def health_check():
 
 @app.post("/generate-meal-plan", response_model=MealPlanResponse)
 def generate_meal_plan(user: UserProfile, db: Session = Depends(get_db)):
-    """
-    Generate a personalized meal plan based on user profile
-    
-    This endpoint:
-    1. Receives UserProfile data
-    2. Generates meal plan using service layer
-    3. Saves user to database
-    4. Saves meal plan to database
-    5. Returns MealPlanResponse
-    """
-    
     try:
-        print(f"📥 Received request for user: {user.name}")
-        
-        # Step 1: Generate the meal plan
-        print("🍽️  Generating meal plan...")
+        # Create or fetch user
+        db_user = create_or_get_user(db, user)
+
+        # Generate plan
         plan = generate_basic_meal_plan(user)
-        print(f"✅ Meal plan generated: {plan.total_calories} calories")
-        
-        # Step 2: Create user object with ALL attributes
-        print("👤 Creating user in database...")
-        db_user = User(
-            name=user.name,
-            age=user.age,
-            weight=user.weight,
-            height=user.height,
-            diet_type=user.diet_type,
-            goal=user.goal,
-            allergies=",".join(user.allergies) if user.allergies else None,
-            phone_number=user.phone_number if hasattr(user, 'phone_number') else None,
-            preferences=user.preferences if hasattr(user, 'preferences') else None
-        )
-        
-        # Step 3: Save user to database
-        db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
-        print(f"✅ User created with ID: {db_user.id}")
-        
-        # Step 4: Create meal plan linked to user
-        print("📋 Saving meal plan to database...")
-        db_meal = MealPlan(
-            user_id=db_user.id,
-            breakfast=plan.breakfast,
-            lunch=plan.lunch,
-            dinner=plan.dinner,
-            total_calories=plan.total_calories
-        )
-        
-        # Step 5: Save meal plan to database
-        db.add(db_meal)
-        db.commit()
-        db.refresh(db_meal)
-        print(f"✅ Meal plan saved with ID: {db_meal.id}")
-        
-        print("🎉 Request completed successfully")
+
+        # Save meal plan
+        save_meal_plan(db, db_user.id, plan)
+
         return plan
-        
-    except AttributeError as e:
-        error_msg = f"Attribute error: {str(e)}. Check if User model has all required fields."
-        print(f"❌ {error_msg}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=error_msg)
-        
-    except ImportError as e:
-        error_msg = f"Import error: {str(e)}. Check your import paths."
-        print(f"❌ {error_msg}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=error_msg)
-        
+
     except Exception as e:
-        error_msg = f"Internal server error: {str(e)}"
-        print(f"❌ {error_msg}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=error_msg)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/users/{user_id}")
@@ -143,30 +87,16 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/users/{user_id}/meal-plans")
+@app.get("/users/{user_id}/meal-plans", response_model=list[MealPlanComplete])
 def get_user_meal_plans(user_id: int, db: Session = Depends(get_db)):
-    """Get all meal plans for a specific user"""
-    try:
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        meal_plans = db.query(MealPlan).filter(MealPlan.user_id == user_id).all()
-        
-        return [
-            {
-                "id": meal.id,
-                "breakfast": meal.breakfast,
-                "lunch": meal.lunch,
-                "dinner": meal.dinner,
-                "total_calories": meal.total_calories
-            }
-            for meal in meal_plans
-        ]
-    except Exception as e:
-        print(f"❌ Error fetching meal plans: {e}")
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+    
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return user.meal_plans
+
 
 
 @app.get("/debug/tables")

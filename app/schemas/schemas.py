@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
+
+
 class UserProfile(BaseModel):
     """
     Pydantic model for User input/output
@@ -24,7 +26,6 @@ class UserProfile(BaseModel):
     class Config:
         from_attributes = True  # Allows conversion from SQLAlchemy models
 
-
 class MealPlanResponse(BaseModel):
     """
     Pydantic model for MealPlan output
@@ -40,7 +41,6 @@ class MealPlanResponse(BaseModel):
     
     class Config:
         from_attributes = True  # Allows conversion from SQLAlchemy models
-
 
 class UserProfileComplete(BaseModel):
     """
@@ -61,18 +61,16 @@ class UserProfileComplete(BaseModel):
     class Config:
         from_attributes = True
 
+from datetime import datetime
+from pydantic import BaseModel
 
 class MealPlanComplete(BaseModel):
-    """
-    Complete meal plan including database IDs
-    Use this for GET endpoints that return existing meal plans
-    """
     id: int
-    user_id: int
     breakfast: str
     lunch: str
     dinner: str
     total_calories: int
-    
+    created_at: datetime
+
     class Config:
         from_attributes = True
