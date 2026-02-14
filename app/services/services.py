@@ -1,6 +1,10 @@
 from app.schemas.schemas import UserProfile, MealPlanResponse
 from sqlalchemy.orm import Session
-from app.models.models import User, MealPlan
+from app.models.user import User
+from app.models.meal_plan import MealPlan
+
+
+
 
 
 def generate_basic_meal_plan(user: UserProfile) -> MealPlanResponse:
