@@ -1,10 +1,11 @@
+"""Database session"""
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from app.core.config import settings
 
 engine = create_engine(
     settings.DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
+    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {},
 )
 
 SessionLocal = sessionmaker(
@@ -14,11 +15,9 @@ SessionLocal = sessionmaker(
 )
 
 
-from sqlalchemy.orm import Session
-
-
-def get_db():
-    db: Session = SessionLocal()
+def get_db() -> Session:
+    """Get database session"""
+    db = SessionLocal()
     try:
         yield db
     finally:

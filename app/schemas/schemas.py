@@ -1,52 +1,27 @@
+"""Pydantic schemas - WITH SNACKS"""
 from pydantic import BaseModel
 from typing import List, Optional
-
+from datetime import datetime
 
 
 class UserProfile(BaseModel):
-    """
-    Pydantic model for User input/output
-    Matches User model in models.py
-    """
-    # Required fields (6 main attributes)
+    """User input/output schema"""
     name: str
     age: int
     weight: float
     height: float
     diet_type: str  # veg / non-veg / vegan
     goal: str  # weight_loss / muscle_gain / maintain
-    
-    # Optional fields (3 additional attributes)
-    allergies: Optional[List[str]] = []  # List format for API, converted to string for DB
+    allergies: Optional[List[str]] = []
     phone_number: Optional[str] = None
     preferences: Optional[str] = None
     
-    # TOTAL: 9 attributes (matches User model except id)
-    
     class Config:
-        from_attributes = True  # Allows conversion from SQLAlchemy models
+        from_attributes = True
 
-class MealPlanResponse(BaseModel):
-    """
-    Pydantic model for MealPlan output
-    Matches MealPlan model in models.py
-    """
-    # All 4 meal plan attributes
-    breakfast: str
-    lunch: str
-    dinner: str
-    total_calories: int
-    
-    # TOTAL: 4 attributes (matches MealPlan model except id and user_id)
-    
-    class Config:
-        from_attributes = True  # Allows conversion from SQLAlchemy models
 
 class UserProfileComplete(BaseModel):
-    """
-    Complete user profile including database ID
-    Use this for GET endpoints that return existing users
-    """
+    """Complete user profile with ID"""
     id: int
     name: str
     age: int
@@ -61,16 +36,57 @@ class UserProfileComplete(BaseModel):
     class Config:
         from_attributes = True
 
-from datetime import datetime
-from pydantic import BaseModel
+
+class MealPlanResponse(BaseModel):
+    """Meal plan output schema - WITH 6 MEALS"""
+    # Breakfast
+    breakfast: str
+    breakfast_cal: int
+    
+    # Morning Snack
+    morning_snack: str
+    morning_snack_cal: int
+    
+    # Lunch
+    lunch: str
+    lunch_cal: int
+    
+    # Afternoon Snack
+    afternoon_snack: str
+    afternoon_snack_cal: int
+    
+    # Dinner
+    dinner: str
+    dinner_cal: int
+    
+    # Evening Snack
+    evening_snack: str
+    evening_snack_cal: int
+    
+    # Total
+    total_calories: int
+    
+    class Config:
+        from_attributes = True
+
 
 class MealPlanComplete(BaseModel):
+    """Complete meal plan with ID and timestamps"""
     id: int
     breakfast: str
+    breakfast_cal: int
+    morning_snack: str
+    morning_snack_cal: int
     lunch: str
+    lunch_cal: int
+    afternoon_snack: str
+    afternoon_snack_cal: int
     dinner: str
+    dinner_cal: int
+    evening_snack: str
+    evening_snack_cal: int
     total_calories: int
     created_at: datetime
-
+    
     class Config:
         from_attributes = True

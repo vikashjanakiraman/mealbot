@@ -1,0 +1,156 @@
+food_name,default_calories,protein_g,carbs_g,fats_g,category,cuisine,diet_type,aliases
+Biryani,400,12,48,15,lunch,Indian,non-veg,briyani;biriyani
+Chicken Curry,280,35,8,12,lunch,Indian,non-veg,chicken gravy
+Dal,200,8,32,2,lunch,Indian,veg,dal fry;daal;lentils
+Paneer Tikka,250,30,5,12,lunch,Indian,veg,paneer
+Roti,80,3,15,1,dinner,Indian,veg,chapati;flatbread
+Rice,200,4,45,0.5,lunch,Indian,veg,basmati;white rice
+Oatmeal,150,5,27,3,breakfast,Western,veg,oats
+Egg White Omelette,100,20,2,2,breakfast,Western,non-veg,omelet;egg
+Dosa,250,8,35,8,breakfast,Indian,veg,dosa
+Idli,60,2,12,0.5,breakfast,Indian,veg,idli
+Sambar,120,5,20,2,lunch,Indian,veg,sambar
+Salad,50,3,8,2,lunch,Western,veg,vegetable salad
+Grilled Chicken,165,35,0,3.6,lunch,Western,non-veg,chicken breast
+Fish,200,40,0,5,dinner,Western,non-veg,baked fish
+Sweet Potato,100,2,24,0.1,dinner,Western,veg,sweet potato
+Broccoli,35,4,7,0.4,dinner,Western,veg,broccoli
+Paneer Butter Masala,350,25,15,20,dinner,Indian,veg,paneer butter masala
+Butter Chicken,320,30,12,16,dinner,Indian,non-veg,butter chicken
+Samosa,150,4,18,7,snack,Indian,veg,samosa
+Pakora,180,6,20,8,snack,Indian,veg,pakora
+Chai,50,1,8,1.5,snack,Indian,veg,tea
+Coffee,20,0.5,2,0,snack,Western,veg,coffee
+Banana,90,1,23,0.3,snack,Western,veg,banana
+Apple,52,0.3,14,0.2,snack,Western,veg,apple
+Almonds,165,6,6,14,snack,Western,veg,nuts;almonds
+Peanut Butter,188,8,7,16,snack,Western,veg,peanut butter
+Greek Yogurt,100,17,6,5,snack,Western,veg,yogurt
+Honey,60,0,17,0,snack,Western,veg,honey
+Mutton Curry,320,35,8,15,dinner,Indian,non-veg,goat meat
+Tandoori Chicken,250,40,2,8,dinner,Indian,non-veg,tandoori
+Rogan Josh,280,32,10,12,dinner,Indian,non-veg,rogan josh
+Vegetable Fried Rice,250,8,35,8,lunch,Western,veg,fried rice
+Naan,300,10,42,10,dinner,Indian,veg,naan bread
+Paratha,250,6,35,10,lunch,Indian,veg,paratha
+Khichdi,300,12,48,6,lunch,Indian,veg,khichdi
+Upma,200,6,32,6,breakfast,Indian,veg,upma
+Poha,180,4,35,3,breakfast,Indian,veg,poha
+Puri,150,2,18,7,breakfast,Indian,veg,puri
+Halwa,250,4,40,8,snack,Indian,veg,halwa
+Gulab Jamun,180,3,28,8,snack,Indian,veg,gulab jamun
+Rasgulla,120,2,26,2,snack,Indian,veg,rasgulla
+Ice Cream,200,3.5,24,11,snack,Western,veg,ice cream
+Lassi,200,8,18,5,snack,Indian,veg,lassi
+Smoothie,150,5,28,3,breakfast,Western,veg,smoothie
+Protein Shake,150,25,10,2,snack,Western,veg,protein powder
+Pav Bhaji,280,12,38,8,lunch,Indian,veg,pav bhaji
+Misal Pav,320,12,45,8,lunch,Indian,veg,misal
+Vada Pav,250,8,32,10,lunch,Indian,veg,vada pav
+Rajma,220,15,35,2,lunch,Indian,veg,kidney beans
+Chole,180,12,30,2,lunch,Indian,veg,chickpeas
+Moong Dal,200,12,32,2,lunch,Indian,veg,moong
+Masur Dal,190,10,32,2,lunch,Indian,veg,red lentils
+Urad Dal,200,12,32,2,lunch,Indian,veg,urad
+Lentil Soup,180,12,25,2,lunch,Western,veg,soup
+Vegetable Soup,80,3,15,2,lunch,Western,veg,veggie soup
+Avocado,240,3,12,22,snack,Western,veg,avocado
+Pasta,350,12,70,1.5,lunch,Western,veg,pasta
+Quinoa,380,14,68,6,lunch,Western,veg,quinoa
+Carrots,40,1,10,0.2,snack,Western,veg,carrot
+Bell Pepper,30,1,7,0.3,snack,Western,veg,peppers
+Spinach,20,3,3,0.4,snack,Western,veg,spinach
+Milk,60,3,5,3,snack,Western,veg,milk
+Cheese,400,25,3,33,snack,Western,veg,cheddar
+Dark Chocolate,530,4,61,31,snack,Western,veg,chocolate
+Cookies,450,5,62,20,snack,Western,veg,biscuit
+Pancake,200,7,42,3,breakfast,Western,veg,pancake
+Scrambled Eggs,150,13,1,11,breakfast,Western,non-veg,eggs
+Bacon,540,37,1,43,breakfast,Western,non-veg,bacon
+Sausage,290,12,0,25,breakfast,Western,non-veg,sausage
+Turkey,190,29,0,7,lunch,Western,non-veg,turkey
+Lamb,294,25,0,21,dinner,Western,non-veg,lamb
+Beef,250,26,0,15,dinner,Western,non-veg,beef
+Pork,242,27,0,14,dinner,Western,non-veg,pork
+Chicken Breast,165,31,0,3.6,lunch,Western,non-veg,chicken
+Ground Beef,200,22,0,11,lunch,Western,non-veg,minced beef
+Sandwich,300,12,35,12,lunch,Western,non-veg,sandwich
+Burger,350,20,35,15,lunch,Western,non-veg,burger
+Pizza,280,12,36,10,lunch,Western,non-veg,pizza
+Steak,250,36,0,11,dinner,Western,non-veg,steak
+Vindaloo,280,20,18,12,dinner,Indian,non-veg,vindaloo
+Korma,300,18,20,15,dinner,Indian,non-veg,korma
+Saag,280,18,15,15,dinner,Indian,non-veg,saag
+Orange,47,0.9,12,0.3,snack,Western,veg,orange
+Mango,60,0.8,15,0.4,snack,Western,veg,mango
+Watermelon,30,0.6,8,0.2,snack,Western,veg,watermelon
+Strawberry,32,0.8,8,0.3,snack,Western,veg,strawberry
+Grapes,67,0.6,17,0.2,snack,Western,veg,grapes
+Dates,282,2.8,75,0.4,snack,Western,veg,dates
+Raisins,300,3,79,0.5,snack,Western,veg,raisins
+Cashew,760,20,32,50,snack,Western,veg,cashew
+Walnuts,650,9,14,65,snack,Western,veg,walnuts
+Chia Seeds,490,17,42,34,snack,Western,veg,chia
+Flaxseed,530,18,29,42,snack,Western,veg,flaxseed
+Sesame Seeds,560,18,30,50,snack,Western,veg,sesame
+Cucumber,15,1,3,0.1,snack,Western,veg,cucumber
+Tomato,18,1,4,0.2,snack,Western,veg,tomato
+Onion,40,1,9,0.1,snack,Western,veg,onion
+Brinjal,25,1,5,0.2,snack,Western,veg,eggplant
+Pumpkin,26,1,7,0.1,snack,Western,veg,pumpkin
+Cabbage,25,1,6,0.1,snack,Western,veg,cabbage
+Cauliflower,25,2,5,0.3,snack,Western,veg,cauliflower
+Beetroot,45,1.7,10,0.2,snack,Western,veg,beet
+Radish,16,0.7,3.4,0.1,snack,Western,veg,radish
+Garlic,150,6.4,33,0.5,snack,Western,veg,garlic
+Ginger,80,1.8,18,0.75,snack,Western,veg,ginger
+Green Chili,40,1.2,9,0.2,snack,Western,veg,chili
+Black Beans,130,9,24,0.5,lunch,Western,veg,beans
+Pinto Beans,125,8,23,0.4,lunch,Western,veg,pinto
+White Beans,130,9,24,0.5,lunch,Western,veg,white beans
+Tofu,180,20,8,10,lunch,Indian,vegan,tofu
+Tempeh,195,19,8,11,lunch,Indian,vegan,tempeh
+Seitan,120,25,2,2,lunch,Indian,vegan,seitan
+Falafel,170,6,16,9,lunch,Indian,veg,falafel
+Kabab,280,30,12,12,dinner,Indian,non-veg,seekh kabab
+Tikka,240,32,6,10,dinner,Indian,non-veg,tikka
+Shami Kabab,260,28,8,12,dinner,Indian,non-veg,shami
+Kofta,270,25,10,14,dinner,Indian,non-veg,kofta
+Fish Curry,280,35,8,10,dinner,Indian,non-veg,fish curry
+Shrimp Curry,220,28,10,8,dinner,Indian,non-veg,prawn
+Hummus,180,6,16,10,snack,Western,veg,hummus
+Guacamole,180,2,8,16,snack,Western,veg,guacamole
+Pita Bread,180,6,35,2,lunch,Western,veg,pita
+Whole Wheat Bread,80,4,14,1,lunch,Western,veg,bread
+White Bread,80,3,15,1,lunch,Western,veg,white bread
+Risotto,350,10,50,10,lunch,Western,veg,risotto
+Couscous,380,12,75,1,lunch,Western,veg,couscous
+Corn,150,6,28,1.5,lunch,Western,veg,corn
+Peas,80,5,14,0.4,lunch,Western,veg,peas
+Mushroom,15,2.2,1,0.3,snack,Western,veg,mushrooms
+Cottage Cheese,100,13,3,5,snack,Western,veg,cottage cheese
+Feta Cheese,260,21,4,21,snack,Western,veg,feta
+Mozzarella,280,28,3,17,snack,Western,veg,mozzarella
+Butter,720,0.7,0,81,snack,Western,veg,butter
+Olive Oil,880,0,0,100,snack,Western,veg,oil
+Coconut Oil,890,0,0,100,snack,Western,veg,coconut oil
+Sesame Oil,880,0,0,100,snack,Western,veg,sesame oil
+Soy Milk,50,3,1.5,2,snack,Western,vegan,soy milk
+Almond Milk,30,1,1,2.5,snack,Western,vegan,almond milk
+Oat Milk,50,2.5,4,1.5,snack,Western,vegan,oat milk
+Croissant,406,9,41,21,breakfast,Western,veg,croissant
+Bagel,240,10,48,1.5,breakfast,Western,veg,bagel
+Muffin,360,8,48,17,breakfast,Western,veg,muffin
+Waffle,290,8,42,10,breakfast,Western,veg,waffle
+French Toast,220,8,28,10,breakfast,Western,veg,french toast
+Brownie,240,3,32,11,snack,Western,veg,brownie
+Cheesecake,320,8,32,18,snack,Western,veg,cheesecake
+Custard,120,3,20,3,snack,Western,veg,custard
+Pudding,150,3,25,4,snack,Western,veg,pudding
+Jello,80,2,20,0,snack,Western,veg,jello
+Mousse,200,4,20,12,snack,Western,veg,mousse
+Tiramisu,320,6,40,16,snack,Western,veg,tiramisu
+Panna Cotta,200,5,20,12,snack,Western,veg,panna cotta
+Carrot Cake,350,4,45,18,snack,Western,veg,carrot cake
+Chocolate Cake,350,4,45,18,snack,Western,veg,chocolate cake
+Vanilla Cake,350,4,45,18,snack,Western,veg,vanilla cake

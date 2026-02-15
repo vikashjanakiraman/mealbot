@@ -1,71 +1,110 @@
-from app.schemas.schemas import UserProfile, MealPlanResponse
+"""Services - with snacks"""
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.models.meal_plan import MealPlan
+from app.schemas.schemas import UserProfile, MealPlanResponse
 
 
-
-
-
-def generate_basic_meal_plan(user: UserProfile) -> MealPlanResponse:
-    """
-    Generate a basic meal plan based on user profile
+def generate_meal_plan_with_snacks(user: UserProfile) -> MealPlanResponse:
+    """Generate meal plan with snacks (6 meals/day)"""
     
-    IMPORTANT: Must return MealPlanResponse object, NOT a dictionary!
-    """
-    
-    # Calculate base calories based on goal
+    # Calculate calorie split by goal
     if user.goal == "weight_loss":
-
-        base_calories = 1800
+        cals = {
+            "breakfast": 350,
+            "morning_snack": 150,
+            "lunch": 500,
+            "afternoon_snack": 150,
+            "dinner": 500,
+            "evening_snack": 150,
+            "total": 1800
+        }
     elif user.goal == "muscle_gain":
-        base_calories = 2500
+        cals = {
+            "breakfast": 500,
+            "morning_snack": 200,
+            "lunch": 700,
+            "afternoon_snack": 200,
+            "dinner": 650,
+            "evening_snack": 250,
+            "total": 2500
+        }
     else:  # maintain
-        base_calories = 2200
+        cals = {
+            "breakfast": 400,
+            "morning_snack": 150,
+            "lunch": 600,
+            "afternoon_snack": 150,
+            "dinner": 600,
+            "evening_snack": 300,
+            "total": 2200
+        }
     
     # Generate meals based on diet type
     if user.diet_type == "veg":
-        breakfast = "Oatmeal with fruits and seeds (400 cal)"
-        lunch = "Vegetable curry with brown rice and dal (600 cal)"
-        dinner = "Paneer tikka with quinoa and salad (500 cal)"
+        meals = {
+            "breakfast": f"Oatmeal with berries ({cals['breakfast']} cal)",
+            "morning_snack": f"Banana + almonds ({cals['morning_snack']} cal)",
+            "lunch": f"Veggie curry + rice + dal ({cals['lunch']} cal)",
+            "afternoon_snack": f"Greek yogurt + granola ({cals['afternoon_snack']} cal)",
+            "dinner": f"Paneer tikka + quinoa + salad ({cals['dinner']} cal)",
+            "evening_snack": f"Herbal tea + biscuits ({cals['evening_snack']} cal)"
+        }
     elif user.diet_type == "vegan":
-        breakfast = "Smoothie bowl with chia seeds and berries (350 cal)"
-        lunch = "Chickpea salad with hummus and whole grain bread (550 cal)"
-        dinner = "Tofu stir-fry with vegetables and brown rice (480 cal)"
+        meals = {
+            "breakfast": f"Smoothie bowl with chia ({cals['breakfast']} cal)",
+            "morning_snack": f"Apple + peanut butter ({cals['morning_snack']} cal)",
+            "lunch": f"Chickpea salad + hummus bread ({cals['lunch']} cal)",
+            "afternoon_snack": f"Almonds + dates ({cals['afternoon_snack']} cal)",
+            "dinner": f"Tofu stir-fry + brown rice ({cals['dinner']} cal)",
+            "evening_snack": f"Coconut milk tea ({cals['evening_snack']} cal)"
+        }
     else:  # non-veg
-        breakfast = "Egg white omelette with whole wheat toast (380 cal)"
-        lunch = "Grilled chicken with quinoa and veggies (650 cal)"
-        dinner = "Baked fish with sweet potato and broccoli (520 cal)"
+        meals = {
+            "breakfast": f"Egg omelette + toast ({cals['breakfast']} cal)",
+            "morning_snack": f"Protein shake + banana ({cals['morning_snack']} cal)",
+            "lunch": f"Grilled chicken + quinoa ({cals['lunch']} cal)",
+            "afternoon_snack": f"Cheese + crackers ({cals['afternoon_snack']} cal)",
+            "dinner": f"Baked fish + sweet potato + broccoli ({cals['dinner']} cal)",
+            "evening_snack": f"Milk + cookies ({cals['evening_snack']} cal)"
+        }
     
     # Handle allergies
     if user.allergies:
         allergies_lower = [a.lower() for a in user.allergies]
         if "nuts" in allergies_lower:
-            breakfast = breakfast.replace("nuts", "seeds")
-        if "dairy" in allergies_lower or "paneer" in allergies_lower:
-            lunch = lunch.replace("paneer", "tofu")
+            meals["morning_snack"] = meals["morning_snack"].replace("almonds", "seeds")
+        if "dairy" in allergies_lower:
+            meals["afternoon_snack"] = meals["afternoon_snack"].replace("yogurt", "coconut")
     
-    # CRITICAL FIX: Return MealPlanResponse object, NOT dict
     return MealPlanResponse(
-        breakfast=breakfast,
-        lunch=lunch,
-        dinner=dinner,
-        total_calories=base_calories
+        breakfast=meals["breakfast"],
+        breakfast_cal=cals["breakfast"],
+        morning_snack=meals["morning_snack"],
+        morning_snack_cal=cals["morning_snack"],
+        lunch=meals["lunch"],
+        lunch_cal=cals["lunch"],
+        afternoon_snack=meals["afternoon_snack"],
+        afternoon_snack_cal=cals["afternoon_snack"],
+        dinner=meals["dinner"],
+        dinner_cal=cals["dinner"],
+        evening_snack=meals["evening_snack"],
+        evening_snack_cal=cals["evening_snack"],
+        total_calories=cals["total"]
     )
 
 
-
-def create_or_get_user(db: Session, user_data):
+def create_or_get_user(db: Session, user_data: UserProfile) -> User:
+    """Create or get user"""
     existing_user = None
-
     if user_data.phone_number:
         existing_user = db.query(User).filter(
             User.phone_number == user_data.phone_number
         ).first()
-
+    
     if existing_user:
         return existing_user
-
+    
     new_user = User(
         name=user_data.name,
         age=user_data.age,
@@ -73,28 +112,39 @@ def create_or_get_user(db: Session, user_data):
         height=user_data.height,
         goal=user_data.goal,
         diet_type=user_data.diet_type,
-        phone_number=user_data.phone_number
+        phone_number=user_data.phone_number,
+        allergies=",".join(user_data.allergies) if user_data.allergies else None,
+        preferences=user_data.preferences
     )
-
+    
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-
+    
     return new_user
-  
 
 
-def save_meal_plan(db: Session, user_id: int, plan):
+def save_meal_plan(db: Session, user_id: int, plan: MealPlanResponse) -> MealPlan:
+    """Save meal plan"""
     db_meal = MealPlan(
         user_id=user_id,
         breakfast=plan.breakfast,
+        breakfast_cal=plan.breakfast_cal,
+        morning_snack=plan.morning_snack,
+        morning_snack_cal=plan.morning_snack_cal,
         lunch=plan.lunch,
+        lunch_cal=plan.lunch_cal,
+        afternoon_snack=plan.afternoon_snack,
+        afternoon_snack_cal=plan.afternoon_snack_cal,
         dinner=plan.dinner,
+        dinner_cal=plan.dinner_cal,
+        evening_snack=plan.evening_snack,
+        evening_snack_cal=plan.evening_snack_cal,
         total_calories=plan.total_calories
     )
-
+    
     db.add(db_meal)
     db.commit()
     db.refresh(db_meal)
-
+    
     return db_meal
