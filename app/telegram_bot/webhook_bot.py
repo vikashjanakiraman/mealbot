@@ -1,10 +1,11 @@
-"""Telegram Bot (IMPROVED – Async, Clean, Non-blocking)"""
+"""Telegram Bot (ROBUST – Handles List/Dict Response Formats)"""
 
 from fastapi import APIRouter, Request
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, Bot
 import httpx
 import os
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,36 @@ async def send_message(chat_id: int, text: str, reply_markup=None):
         print(f"✅ Message sent to {chat_id}")
     except Exception as e:
         print(f"❌ Send error: {str(e)}")
+
+
+# ============================================================
+# HELPER: Safe Response Parsing
+# ============================================================
+def safe_get_response(response_data):
+    """
+    Handle both dict and list responses gracefully
+    
+    Returns: dict if valid, None if error
+    """
+    print(f"📥 Raw response type: {type(response_data)}")
+    print(f"📥 Raw response: {response_data}")
+    
+    # If it's a list, take first element
+    if isinstance(response_data, list):
+        print(f"⚠️  Response is LIST, taking first element")
+        if len(response_data) > 0:
+            return response_data[0]
+        else:
+            return None
+    
+    # If it's a dict, return as-is
+    if isinstance(response_data, dict):
+        print(f"✅ Response is DICT")
+        return response_data
+    
+    # Unexpected format
+    print(f"❌ Unexpected format: {type(response_data)}")
+    return None
 
 
 # ============================================================
@@ -152,6 +183,7 @@ Use /plan to get started!"""
             # Call API to create plan
             async with httpx.AsyncClient() as client:
                 try:
+                    print(f"\n📡 Calling /meal-plan API")
                     resp = await client.post(
                         f"{API_URL}/meal-plan",
                         json={
@@ -166,36 +198,45 @@ Use /plan to get started!"""
                         timeout=30
                     )
 
+                    print(f"Status: {resp.status_code}")
+                    
                     if resp.status_code == 200:
-                        plan = resp.json()
-                        message = f"""
+                        plan_data = resp.json()
+                        plan = safe_get_response(plan_data)
+                        
+                        if plan:
+                            message = f"""
 ✅ **Your 6-Meal Plan!**
 
-🌅 **Breakfast** ({plan['breakfast_cal']} cal)
-{plan['breakfast']}
+🌅 **Breakfast** ({plan.get('breakfast_cal', '?')} cal)
+{plan.get('breakfast', 'N/A')}
 
-🍌 **Morning Snack** ({plan['morning_snack_cal']} cal)
-{plan['morning_snack']}
+🍌 **Morning Snack** ({plan.get('morning_snack_cal', '?')} cal)
+{plan.get('morning_snack', 'N/A')}
 
-🍽️ **Lunch** ({plan['lunch_cal']} cal)
-{plan['lunch']}
+🍽️ **Lunch** ({plan.get('lunch_cal', '?')} cal)
+{plan.get('lunch', 'N/A')}
 
-☕ **Afternoon Snack** ({plan['afternoon_snack_cal']} cal)
-{plan['afternoon_snack']}
+☕ **Afternoon Snack** ({plan.get('afternoon_snack_cal', '?')} cal)
+{plan.get('afternoon_snack', 'N/A')}
 
-🍗 **Dinner** ({plan['dinner_cal']} cal)
-{plan['dinner']}
+🍗 **Dinner** ({plan.get('dinner_cal', '?')} cal)
+{plan.get('dinner', 'N/A')}
 
-🌙 **Evening Snack** ({plan['evening_snack_cal']} cal)
-{plan['evening_snack']}
+🌙 **Evening Snack** ({plan.get('evening_snack_cal', '?')} cal)
+{plan.get('evening_snack', 'N/A')}
 
-**Total: {plan['total_calories']} cal/day**
+**Total: {plan.get('total_calories', '?')} cal/day**
 
 Use /log to start logging! 📝"""
-                        await send_message(chat_id, message)
+                            await send_message(chat_id, message)
+                        else:
+                            await send_message(chat_id, f"❌ Invalid response format from API")
                     else:
-                        await send_message(chat_id, f"❌ Error: {resp.text}")
+                        await send_message(chat_id, f"❌ API Error {resp.status_code}")
+                        
                 except Exception as e:
+                    print(f"❌ Exception: {str(e)}")
                     await send_message(chat_id, f"❌ Error: {str(e)}")
 
             set_user_step(user_id, None)
@@ -255,9 +296,14 @@ Use /log to start logging! 📝"""
             return {"ok": True}
 
         elif step == "log_unit":
+            print(f"\n🔥 Logging meal for user {user_id}")
+            print(f"   Meal: {state['meal_type']} - {state['food_name']} - {state['quantity']} {text}")
+            
             # Log the meal via API
             async with httpx.AsyncClient() as client:
                 try:
+                    print(f"📡 Calling /log-meal API")
+                    
                     resp = await client.post(
                         f"{API_URL}/log-meal",
                         params={
@@ -270,26 +316,37 @@ Use /log to start logging! 📝"""
                         timeout=30
                     )
 
+                    print(f"Status: {resp.status_code}")
+                    
                     if resp.status_code == 200:
-                        result = resp.json()
-                        message = f"""
+                        log_data = resp.json()
+                        result = safe_get_response(log_data)
+                        
+                        if result and isinstance(result, dict):
+                            message = f"""
 ✅ **Meal Logged!**
 
-🍽️ {result['food']}
-📏 {result['input']}
-🍴 Serving: {result['standard_serving']}
-🔥 Calories: {result['actual_calories']} cal
+🍽️ {result.get('food', 'Food')}
+📏 {result.get('input', '?')}
+🍴 Serving: {result.get('standard_serving', '?')}
+🔥 Calories: {result.get('actual_calories', '?')} cal
 
 📊 **Today's Progress:**
-Total: {result['consumed_total']} cal
-Remaining: {result['remaining']} cal
+Total: {result.get('consumed_total', '?')} cal
+Remaining: {result.get('remaining', '?')} cal
 
-{result['message']}"""
-                        await send_message(chat_id, message)
+{result.get('message', '')}"""
+                            await send_message(chat_id, message)
+                            print(f"✅ Meal logged successfully!")
+                        else:
+                            await send_message(chat_id, f"❌ Invalid response format from API. Got: {type(log_data)}")
+                            print(f"❌ Response format error: {log_data}")
                     else:
-                        error = resp.json()
-                        await send_message(chat_id, f"❌ Error: {error}")
+                        await send_message(chat_id, f"❌ API Error {resp.status_code}: {resp.text[:100]}")
+                        print(f"❌ API Error: {resp.status_code}")
+                        
                 except Exception as e:
+                    print(f"❌ Exception: {str(e)}")
                     await send_message(chat_id, f"❌ Error: {str(e)}")
 
             set_user_step(user_id, None)
@@ -310,32 +367,37 @@ Remaining: {result['remaining']} cal
 
                     if resp.status_code == 200:
                         data_resp = resp.json()
-                        message = f"""
+                        data = safe_get_response(data_resp)
+                        
+                        if data:
+                            message = f"""
 📊 **Your Progress Today**
 
-👤 {data_resp['user']} | Goal: {data_resp['goal']}
+👤 {data.get('user', 'User')} | Goal: {data.get('goal', '?')}
 
-🎯 **Calorie Target:** {data_resp['target_calories']} cal
-✅ **Consumed:** {data_resp['consumed_calories']} cal
-⬅️ **Remaining:** {data_resp['remaining_calories']} cal
+🎯 **Calorie Target:** {data.get('target_calories', '?')} cal
+✅ **Consumed:** {data.get('consumed_calories', '?')} cal
+⬅️ **Remaining:** {data.get('remaining_calories', '?')} cal
 
-📈 **Progress:** {data_resp['progress']}
+📈 **Progress:** {data.get('progress', '?')}
 
 📋 **Meals by Type:**
-🌅 Breakfast: {data_resp['meals_by_type']['breakfast']['consumed']}/{data_resp['meals_by_type']['breakfast']['target']} cal
-🍌 Morning Snack: {data_resp['meals_by_type']['morning_snack']['consumed']}/{data_resp['meals_by_type']['morning_snack']['target']} cal
-🍽️ Lunch: {data_resp['meals_by_type']['lunch']['consumed']}/{data_resp['meals_by_type']['lunch']['target']} cal
-☕ Afternoon Snack: {data_resp['meals_by_type']['afternoon_snack']['consumed']}/{data_resp['meals_by_type']['afternoon_snack']['target']} cal
-🍗 Dinner: {data_resp['meals_by_type']['dinner']['consumed']}/{data_resp['meals_by_type']['dinner']['target']} cal
-🌙 Evening Snack: {data_resp['meals_by_type']['evening_snack']['consumed']}/{data_resp['meals_by_type']['evening_snack']['target']} cal
+🌅 Breakfast: {data.get('meals_by_type', {}).get('breakfast', {}).get('consumed', '?')}/{data.get('meals_by_type', {}).get('breakfast', {}).get('target', '?')} cal
+🍌 Morning Snack: {data.get('meals_by_type', {}).get('morning_snack', {}).get('consumed', '?')}/{data.get('meals_by_type', {}).get('morning_snack', {}).get('target', '?')} cal
+🍽️ Lunch: {data.get('meals_by_type', {}).get('lunch', {}).get('consumed', '?')}/{data.get('meals_by_type', {}).get('lunch', {}).get('target', '?')} cal
+☕ Afternoon Snack: {data.get('meals_by_type', {}).get('afternoon_snack', {}).get('consumed', '?')}/{data.get('meals_by_type', {}).get('afternoon_snack', {}).get('target', '?')} cal
+🍗 Dinner: {data.get('meals_by_type', {}).get('dinner', {}).get('consumed', '?')}/{data.get('meals_by_type', {}).get('dinner', {}).get('target', '?')} cal
+🌙 Evening Snack: {data.get('meals_by_type', {}).get('evening_snack', {}).get('consumed', '?')}/{data.get('meals_by_type', {}).get('evening_snack', {}).get('target', '?')} cal
 
 📊 **Macros:**
-🥩 Protein: {data_resp['macros']['protein_g']}g
-🍞 Carbs: {data_resp['macros']['carbs_g']}g
-🥑 Fats: {data_resp['macros']['fats_g']}g
+🥩 Protein: {data.get('macros', {}).get('protein_g', '?')}g
+🍞 Carbs: {data.get('macros', {}).get('carbs_g', '?')}g
+🥑 Fats: {data.get('macros', {}).get('fats_g', '?')}g
 
-Meals logged: {data_resp['meals_logged']}"""
-                        await send_message(chat_id, message)
+Meals logged: {data.get('meals_logged', '?')}"""
+                            await send_message(chat_id, message)
+                        else:
+                            await send_message(chat_id, "❌ No data. Use /plan first!")
                     else:
                         await send_message(chat_id, "❌ No data. Use /plan first!")
                 except Exception as e:
@@ -353,19 +415,24 @@ Meals logged: {data_resp['meals_logged']}"""
 
                     if resp.status_code == 200:
                         data_resp = resp.json()
-                        suggestions = "\n".join(
-                            [f"{i}. **{s['food']}** - {s['calories']} cal"
-                             for i, s in enumerate(data_resp["suggestions"][:5], 1)]
-                        )
-                        message = f"""
+                        data = safe_get_response(data_resp)
+                        
+                        if data:
+                            suggestions = "\n".join(
+                                [f"{i}. **{s.get('food', '?')}** - {s.get('calories', '?')} cal"
+                                 for i, s in enumerate(data.get("suggestions", [])[:5], 1)]
+                            )
+                            message = f"""
 💡 **Smart Suggestions**
 
-⏰ {data_resp['meal_type'].replace('_', ' ').title()}
-🎯 Target: {data_resp['target_calories']} cal
+⏰ {data.get('meal_type', '?').replace('_', ' ').title()}
+🎯 Target: {data.get('target_calories', '?')} cal
 
 🍽️ **Top Picks:**
 {suggestions}"""
-                        await send_message(chat_id, message)
+                            await send_message(chat_id, message)
+                        else:
+                            await send_message(chat_id, "❌ Error getting suggestions")
                     else:
                         await send_message(chat_id, "❌ Error getting suggestions")
                 except Exception as e:
