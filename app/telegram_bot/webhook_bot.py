@@ -9,7 +9,7 @@ from typing import Dict
 logger = logging.getLogger(__name__)
 
 # Your API URL
-API_URL = "https://mealbot-852c.onrender.com"
+API_URL = "https://mealbot-85zc.onrender.com"
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 # VALIDATE TOKEN
