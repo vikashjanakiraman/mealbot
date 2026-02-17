@@ -1,4 +1,4 @@
-"""Telegram Bot with proper state management"""
+"""Telegram Bot with proper state management - IMPROVED"""
 from fastapi import APIRouter, Request
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, Bot
 import requests
@@ -9,7 +9,7 @@ from typing import Dict
 logger = logging.getLogger(__name__)
 
 # Your API URL
-API_URL = os.getenv("API_URL")
+API_URL = "https://mealbot-852c.onrender.com"
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 # VALIDATE TOKEN
@@ -147,6 +147,9 @@ async def handle_plan_allergies(chat_id: int, user_id: int, allergies_text: str)
     
     # Call API to create meal plan
     try:
+        print(f"🎯 Creating meal plan for user {user_id}")
+        print(f"   Goal: {state['goal']}, Diet: {state['diet_type']}, Allergies: {allergies}")
+        
         response = requests.post(
             f"{API_URL}/meal-plan",
             json={
@@ -160,6 +163,8 @@ async def handle_plan_allergies(chat_id: int, user_id: int, allergies_text: str)
             },
         )
 
+        print(f"📥 API Response: {response.status_code}")
+        
         if response.status_code == 200:
             plan = response.json()
             message = f"""
@@ -189,10 +194,14 @@ Now use /log to start logging meals!
 """
             await send_message(chat_id, message)
         else:
-            await send_message(chat_id, "❌ Error creating plan. Try again.")
+            error_msg = f"❌ Error creating plan. Status: {response.status_code}"
+            print(f"   Error: {error_msg}")
+            await send_message(chat_id, error_msg)
     
     except Exception as e:
-        await send_message(chat_id, f"❌ Error: {str(e)}")
+        error_msg = f"❌ Error: {str(e)}"
+        print(f"   Exception: {error_msg}")
+        await send_message(chat_id, error_msg)
     
     # Reset state
     state["step"] = None
@@ -221,6 +230,8 @@ async def handle_log_meal_type(chat_id: int, user_id: int, meal_type: str):
     state["meal_type"] = meal_type
     state["step"] = "log_food"
     
+    print(f"🍽️ Meal type selected: {meal_type}")
+    
     await send_message(
         chat_id,
         "What food? (e.g., biryani, chicken, rice)",
@@ -233,6 +244,8 @@ async def handle_log_food(chat_id: int, user_id: int, food_name: str):
     state = get_user_state(user_id)
     state["food_name"] = food_name
     state["step"] = "log_quantity"
+    
+    print(f"🥘 Food selected: {food_name}")
     
     await send_message(
         chat_id,
@@ -247,29 +260,45 @@ async def handle_log_quantity(chat_id: int, user_id: int, quantity_text: str):
         quantity = float(quantity_text)
         state["quantity"] = quantity
         state["step"] = "log_unit"
+        
+        print(f"📏 Quantity: {quantity}")
+        
+        reply_keyboard = [
+            ["serving", "bowl"],
+            ["grams", "piece"],
+            ["cup", "tbsp"],
+            ["ml"],
+        ]
+        await send_message(
+            chat_id,
+            "What unit?",
+            ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
+        )
     except ValueError:
+        print(f"❌ Invalid quantity: {quantity_text}")
         await send_message(chat_id, "❌ Please enter a number (e.g., 1, 0.5, 200)")
         return
-
-    reply_keyboard = [
-        ["serving", "bowl"],
-        ["grams", "piece"],
-        ["cup", "tbsp"],
-        ["ml"],
-    ]
-    await send_message(
-        chat_id,
-        "What unit?",
-        ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
-    )
 
 
 async def handle_log_unit(chat_id: int, user_id: int, unit: str):
     """Handle unit in /log and log meal"""
+    print(f"\n{'='*60}")
+    print(f"🔥 LOGGING MEAL FOR USER {user_id}")
+    print(f"{'='*60}")
+    
     state = get_user_state(user_id)
+    
+    print(f"📋 State: {state}")
+    print(f"🔹 User ID: {user_id}")
+    print(f"🔹 Meal Type: {state['meal_type']}")
+    print(f"🔹 Food Name: {state['food_name']}")
+    print(f"🔹 Quantity: {state['quantity']}")
+    print(f"🔹 Unit: {unit}")
     
     # Call API to log meal
     try:
+        print(f"\n📡 Calling API: {API_URL}/log-meal")
+        
         response = requests.post(
             f"{API_URL}/log-meal",
             params={
@@ -281,8 +310,15 @@ async def handle_log_unit(chat_id: int, user_id: int, unit: str):
             },
         )
 
+        print(f"📥 API Response Status: {response.status_code}")
+        print(f"📥 API Response Body: {response.text}")
+
         if response.status_code == 200:
             result = response.json()
+            print(f"✅ Meal logged successfully!")
+            print(f"   Food: {result.get('food')}")
+            print(f"   Calories: {result.get('actual_calories')}")
+            
             message = f"""
 ✅ **Meal Logged!**
 
@@ -299,13 +335,21 @@ Remaining: {result['remaining']} cal
 """
             await send_message(chat_id, message)
         else:
-            await send_message(chat_id, f"❌ Error: {response.json()['error']}")
+            error_detail = response.json() if response.text else "No error details"
+            error_msg = f"❌ Error: {error_detail}"
+            print(f"❌ API Error: {error_msg}")
+            await send_message(chat_id, error_msg)
 
     except Exception as e:
-        await send_message(chat_id, f"❌ Error: {str(e)}")
+        error_msg = f"❌ Exception: {str(e)}"
+        print(f"❌ {error_msg}")
+        await send_message(chat_id, error_msg)
     
-    # Reset state
-    state["step"] = None
+    finally:
+        # Reset state
+        print(f"🔄 Resetting state")
+        state["step"] = None
+        print(f"{'='*60}\n")
 
 
 # ============================================================
@@ -321,6 +365,7 @@ async def webhook(request: Request):
         update = Update.de_json(data, bot)
 
         if not update.message:
+            print("⚠️ No message in update")
             return {"ok": True}
 
         chat_id = update.message.chat_id
@@ -333,6 +378,8 @@ async def webhook(request: Request):
 
         state = get_user_state(user_id)
         current_step = state.get("step")
+        
+        print(f"📍 Current step: {current_step}")
 
         # ============================================================
         # HANDLE BASED ON CURRENT CONVERSATION STEP
@@ -340,32 +387,44 @@ async def webhook(request: Request):
         
         # If in middle of conversation, handle accordingly
         if current_step == "plan_goal":
+            print("→ Processing plan_goal")
             await handle_plan_goal(chat_id, user_id, text)
         elif current_step == "plan_diet":
+            print("→ Processing plan_diet")
             await handle_plan_diet(chat_id, user_id, text)
         elif current_step == "plan_allergies":
+            print("→ Processing plan_allergies")
             await handle_plan_allergies(chat_id, user_id, text)
         elif current_step == "log_meal_type":
+            print("→ Processing log_meal_type")
             await handle_log_meal_type(chat_id, user_id, text)
         elif current_step == "log_food":
+            print("→ Processing log_food")
             await handle_log_food(chat_id, user_id, text)
         elif current_step == "log_quantity":
+            print("→ Processing log_quantity")
             await handle_log_quantity(chat_id, user_id, text)
         elif current_step == "log_unit":
+            print("→ Processing log_unit")
             await handle_log_unit(chat_id, user_id, text)
         
         # ============================================================
         # HANDLE COMMANDS
         # ============================================================
         elif text == "/start":
+            print("→ Processing /start")
             await handle_start(chat_id, user_id, first_name)
         elif text == "/help":
+            print("→ Processing /help")
             await handle_help(chat_id)
         elif text == "/plan":
+            print("→ Processing /plan")
             await handle_plan_start(chat_id, user_id)
         elif text == "/log":
+            print("→ Processing /log")
             await handle_log_start(chat_id, user_id)
         elif text == "/status":
+            print("→ Processing /status")
             # Handle status
             try:
                 response = requests.get(
@@ -374,13 +433,39 @@ async def webhook(request: Request):
                 )
                 if response.status_code == 200:
                     data_resp = response.json()
-                    msg = f"📊 Progress: {data_resp['consumed_calories']}/{data_resp['target_calories']} cal ({data_resp['progress']})"
-                    await send_message(chat_id, msg)
+                    message = f"""
+📊 **Your Progress Today**
+
+👤 {data_resp['user']} | Goal: {data_resp['goal']}
+
+🎯 **Calorie Target:** {data_resp['target_calories']} cal
+✅ **Consumed:** {data_resp['consumed_calories']} cal
+⬅️ **Remaining:** {data_resp['remaining_calories']} cal
+
+📈 **Progress:** {data_resp['progress']}
+
+📋 **Meals by Type:**
+🌅 Breakfast: {data_resp['meals_by_type']['breakfast']['consumed']}/{data_resp['meals_by_type']['breakfast']['target']} cal
+🍌 Morning Snack: {data_resp['meals_by_type']['morning_snack']['consumed']}/{data_resp['meals_by_type']['morning_snack']['target']} cal
+🍽️ Lunch: {data_resp['meals_by_type']['lunch']['consumed']}/{data_resp['meals_by_type']['lunch']['target']} cal
+☕ Afternoon Snack: {data_resp['meals_by_type']['afternoon_snack']['consumed']}/{data_resp['meals_by_type']['afternoon_snack']['target']} cal
+🍗 Dinner: {data_resp['meals_by_type']['dinner']['consumed']}/{data_resp['meals_by_type']['dinner']['target']} cal
+🌙 Evening Snack: {data_resp['meals_by_type']['evening_snack']['consumed']}/{data_resp['meals_by_type']['evening_snack']['target']} cal
+
+📊 **Macros:**
+🥩 Protein: {data_resp['macros']['protein_g']}g
+🍞 Carbs: {data_resp['macros']['carbs_g']}g
+🥑 Fats: {data_resp['macros']['fats_g']}g
+
+Meals logged: {data_resp['meals_logged']}
+"""
+                    await send_message(chat_id, message)
                 else:
                     await send_message(chat_id, "❌ No data. Use /plan first!")
             except Exception as e:
                 await send_message(chat_id, f"❌ Error: {str(e)}")
         elif text == "/suggest":
+            print("→ Processing /suggest")
             # Handle suggest
             try:
                 response = requests.get(
@@ -389,13 +474,25 @@ async def webhook(request: Request):
                 )
                 if response.status_code == 200:
                     data_resp = response.json()
-                    msg = f"💡 Try: {data_resp['suggestions'][0]['food']} ({data_resp['suggestions'][0]['calories']} cal)"
+                    suggestions_text = ""
+                    for i, suggestion in enumerate(data_resp['suggestions'], 1):
+                        suggestions_text += f"\n{i}. **{suggestion['food']}** - {suggestion['calories']} cal"
+                    
+                    msg = f"""
+💡 **Smart Meal Suggestions**
+
+⏰ **Time:** {data_resp['meal_type'].replace('_', ' ').title()}
+🎯 **Target:** {data_resp['target_calories']} cal
+
+🍽️ **Top Suggestions:** {suggestions_text}
+"""
                     await send_message(chat_id, msg)
                 else:
                     await send_message(chat_id, "❌ Error getting suggestions")
             except Exception as e:
                 await send_message(chat_id, f"❌ Error: {str(e)}")
         else:
+            print("→ Unknown command")
             await send_message(chat_id, "❓ Unknown command. Use /help!")
 
         return {"ok": True}
