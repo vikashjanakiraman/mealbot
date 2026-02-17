@@ -8,7 +8,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Your API URL
-API_URL = "https://mealbot-852c.onrender.com"
+API_URL = os.getenv("API_URL")
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_WEBHOOK_URL = f"{API_URL}/telegram/webhook"
 
