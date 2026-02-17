@@ -1,4 +1,4 @@
-"""Updated main.py with Telegram Webhook Bot Integration"""
+"""Main FastAPI app with Telegram Webhook Bot"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -15,6 +15,7 @@ from app.database.session import engine
 from app.telegram_bot.webhook_bot import router as telegram_router, setup_webhook
 
 logger = logging.getLogger(__name__)
+
 
 # ============================================================
 # STARTUP EVENT - Register Telegram Webhook
@@ -41,6 +42,7 @@ async def lifespan(app: FastAPI):
     # SHUTDOWN
     print("🛑 Shutting down MealBot API...")
 
+
 # ============================================================
 # CREATE FASTAPI APP
 # ============================================================
@@ -50,6 +52,7 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan
 )
+
 
 # ============================================================
 # CORS MIDDLEWARE
@@ -62,11 +65,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # ============================================================
 # INCLUDE ROUTERS
 # ============================================================
 app.include_router(api_router)  # Your meal planning API
 app.include_router(telegram_router)  # Telegram webhook
+
 
 # ============================================================
 # ROOT ENDPOINTS
@@ -74,6 +79,7 @@ app.include_router(telegram_router)  # Telegram webhook
 @app.get("/")
 def root():
     return {"message": "MealBot is running", "status": "ok"}
+
 
 @app.get("/health")
 def health_check():
