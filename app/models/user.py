@@ -9,7 +9,7 @@ class User(Base):
     __tablename__ = "users"
     
     # Primary key
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
     
     # Basic info
     name = Column(String, index=True)

@@ -7,7 +7,7 @@ from app.database.base import Base
 class FoodLog(Base):
     __tablename__ = "food_logs"
     
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
     
     # Meal information
     meal_type = Column(String, index=True)  # breakfast, morning_snack, lunch, afternoon_snack, dinner, evening_snack
@@ -24,7 +24,7 @@ class FoodLog(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Foreign key
-    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    user_id = Column(BigInteger, ForeignKey("users.id"), index=True)
     
     # Relationship
     user = relationship("User", back_populates="food_logs")

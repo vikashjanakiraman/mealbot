@@ -8,7 +8,7 @@ from app.database.base import Base
 class MealPlan(Base):
     __tablename__ = "meal_plans"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
     
     # 6 meals per day
     breakfast = Column(String, nullable=False)
@@ -30,7 +30,7 @@ class MealPlan(Base):
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(BigInteger, ForeignKey("users.id"))
     
     user = relationship("User", back_populates="meal_plans")
     

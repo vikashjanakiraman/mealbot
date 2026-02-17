@@ -9,11 +9,11 @@ from datetime import date
 class DailySummary(Base):
     __tablename__ = "daily_summaries"
     
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
     
     # Date information (unique per user per day)
     date = Column(Date, default=date.today, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    user_id = Column(BigInteger, ForeignKey("users.id"), index=True)
     
     # Calorie tracking
     target_calories = Column(Integer)

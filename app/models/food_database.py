@@ -6,7 +6,7 @@ from app.database.base import Base
 class FoodDatabase(Base):
     __tablename__ = "food_database"
     
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(BigInteger, primary_key=True, index=True)
     
     # Food identification
     food_name = Column(String, unique=True, index=True)
