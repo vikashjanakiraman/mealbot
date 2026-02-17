@@ -4,21 +4,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
 
-# Import existing routers
-from app.api.routes import router as api_router
-
 # Import database
 from app.database.base import Base
 from app.database.session import engine
 
-# Import telegram bot
+# Import telegram bot FIRST
 from app.telegram_bot.webhook_bot import router as telegram_router, setup_webhook
+
+# Import other routers
+from app.api.routes import router as api_router
 
 logger = logging.getLogger(__name__)
 
 
 # ============================================================
-# STARTUP EVENT - Register Telegram Webhook
+# STARTUP EVENT
 # ============================================================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -67,10 +67,10 @@ app.add_middleware(
 
 
 # ============================================================
-# INCLUDE ROUTERS
+# INCLUDE ROUTERS (TELEGRAM FIRST!)
 # ============================================================
+app.include_router(telegram_router)  # Telegram webhook - INCLUDE FIRST
 app.include_router(api_router)  # Your meal planning API
-app.include_router(telegram_router)  # Telegram webhook
 
 
 # ============================================================
