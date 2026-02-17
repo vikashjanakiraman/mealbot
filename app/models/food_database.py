@@ -1,5 +1,5 @@
 """FoodDatabase model - reference database of foods with serving sizes"""
-from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy import Column, Integer, BigInteger, String, Float
 from app.database.base import Base
 
 

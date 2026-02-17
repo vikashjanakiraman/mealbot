@@ -1,5 +1,5 @@
 """DailySummary database model - aggregated daily stats"""
-from sqlalchemy import Column, Integer, Float, DateTime, Date, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, BigInteger, Float, DateTime, Date, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database.base import Base

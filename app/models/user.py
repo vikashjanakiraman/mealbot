@@ -1,5 +1,5 @@
 """User database model"""
-from sqlalchemy import Column, Integer, String, Float, DateTime
+from sqlalchemy import Column, Integer, BigInteger, String, Float, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database.base import Base
