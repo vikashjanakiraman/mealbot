@@ -1,9 +1,17 @@
-"""Pydantic schemas"""
 from app.schemas.schemas import (
     UserProfile,
-    UserProfileComplete,
     MealPlanResponse,
-    MealPlanComplete
+    FoodLogRequest,
+    FoodLogResponse,
+    DailyStatusResponse,
+    SuggestionsResponse
 )
 
-__all__ = ["UserProfile", "UserProfileComplete", "MealPlanResponse", "MealPlanComplete"]
+__all__ = [
+    "UserProfile",
+    "MealPlanResponse",
+    "FoodLogRequest",
+    "FoodLogResponse",
+    "DailyStatusResponse",
+    "SuggestionsResponse"
+]
