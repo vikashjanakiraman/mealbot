@@ -1,4 +1,4 @@
-"""API routes - WITH SNACKS, QUANTITY, AND UNIT CONVERSION"""
+"""API routes - WITH SNACKS, QUANTITY, UNIT CONVERSION, AND USER REGISTRATION"""
 from datetime import date
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -33,6 +33,78 @@ from app.database.session import get_db
 router = APIRouter()
 
 
+# ============================================================
+# USER REGISTRATION (NEW ENDPOINT)
+# ============================================================
+
+@router.post("/register-user")
+def register_user(user: UserProfile, db: Session = Depends(get_db)):
+    """
+    Register a new user with their profile info.
+    This is called by the Telegram bot after /start completes.
+    
+    Parameters:
+    - id: Telegram user ID (required)
+    - name: User's name (required)
+    - age: User's age (required)
+    - weight: Weight in kg (required)
+    - height: Height in cm (required)
+    - diet_type: veg, non-veg, or vegan (optional)
+    - goal: weight_loss, muscle_gain, or maintenance (optional)
+    
+    Returns:
+    - User registered with ID
+    """
+    try:
+        print(f"\n📝 Registering user: {user.name} (ID: {user.id})")
+        
+        # Check if user already exists
+        existing = db.query(User).filter(User.id == user.id).first()
+        if existing:
+            print(f"⚠️  User {user.id} already exists")
+            return {
+                "status": "success",
+                "message": "User already exists",
+                "user_id": existing.id,
+                "name": existing.name
+            }
+        
+        # Create new user
+        new_user = User(
+            id=user.id,
+            name=user.name,
+            age=user.age,
+            weight=user.weight,
+            height=user.height,
+            diet_type=user.diet_type or "non-veg",
+            goal=user.goal or "maintenance"
+        )
+        
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        print(f"✅ User registered: {new_user.id} - {new_user.name}")
+        
+        return {
+            "status": "success",
+            "message": "User registered successfully",
+            "user_id": new_user.id,
+            "name": new_user.name,
+            "age": new_user.age,
+            "weight": new_user.weight,
+            "height": new_user.height
+        }
+    
+    except Exception as e:
+        print(f"❌ Registration error: {str(e)}")
+        return {"status": "error", "error": str(e)}, 500
+
+
+# ============================================================
+# MEAL PLAN ENDPOINT
+# ============================================================
+
 @router.post("/meal-plan", response_model=MealPlanResponse)
 def create_meal_plan(user: UserProfile, db: Session = Depends(get_db)):
     """Create a meal plan for user with 6 meals/day including snacks"""
@@ -41,6 +113,10 @@ def create_meal_plan(user: UserProfile, db: Session = Depends(get_db)):
     save_meal_plan(db, db_user.id, plan)
     return plan
 
+
+# ============================================================
+# LOG MEAL ENDPOINT
+# ============================================================
 
 @router.post("/log-meal")
 def log_meal(
@@ -55,7 +131,7 @@ def log_meal(
     Log a meal with explicit quantity and unit.
     
     Parameters:
-    - user_id: User ID
+    - user_id: User ID (Telegram ID)
     - meal_type: breakfast, morning_snack, lunch, afternoon_snack, dinner, evening_snack
     - food_name: Name of food
     - quantity: How much (required)
@@ -69,39 +145,58 @@ def log_meal(
       * "ml" = milliliter
     
     Examples:
-    POST /log-meal?user_id=1&meal_type=lunch&food_name=biryani&quantity=1&unit=bowl
-    POST /log-meal?user_id=1&meal_type=lunch&food_name=biryani&quantity=200&unit=grams
-    POST /log-meal?user_id=1&meal_type=breakfast&food_name=almonds&quantity=23&unit=piece
+    POST /log-meal?user_id=6794649854&meal_type=lunch&food_name=biryani&quantity=1&unit=bowl
+    POST /log-meal?user_id=6794649854&meal_type=lunch&food_name=biryani&quantity=200&unit=grams
+    POST /log-meal?user_id=6794649854&meal_type=breakfast&food_name=almonds&quantity=23&unit=piece
     """
     
     try:
+        print(f"\n🔥 Log meal request:")
+        print(f"   User ID: {user_id}")
+        print(f"   Meal type: {meal_type}")
+        print(f"   Food: {food_name}")
+        print(f"   Quantity: {quantity} {unit}")
+        
         valid, msg = validate_meal_input(user_id, meal_type, food_name)
         if not valid:
+            print(f"❌ Validation error: {msg}")
             return {"status": "error", "error": msg}, 400
         
         if quantity <= 0:
+            print(f"❌ Quantity error: must be > 0")
             return {"status": "error", "error": "Quantity must be greater than 0"}, 400
         
         if not unit:
+            print(f"❌ Unit error: required")
             return {"status": "error", "error": "Unit is required (e.g., 'bowl', 'grams', 'cup', 'piece')"}, 400
         
+        # Check if user exists
         user = db.query(User).get(user_id)
         if not user:
+            print(f"❌ User not found: {user_id}")
             return {"status": "error", "error": "User not found"}, 404
         
+        print(f"✅ User found: {user.name}")
+        
         if prevent_duplicate_log(db, user_id, food_name):
+            print(f"❌ Duplicate log detected")
             return {
                 "status": "error",
                 "error": f"Already logged '{food_name}' in last 5 mins"
             }, 400
         
+        # Search for food
         food = fuzzy_search_food(db, food_name)
         if not food:
+            print(f"❌ Food not found: {food_name}")
             return {
                 "status": "error",
                 "error": f"Food '{food_name}' not found in database"
             }, 404
         
+        print(f"✅ Food found: {food.food_name}")
+        
+        # Convert quantity to serving multiplier
         serving_multiplier = convert_to_serving_multiplier(
             quantity=quantity,
             user_unit=unit.lower(),
@@ -111,16 +206,27 @@ def log_meal(
         )
         
         if serving_multiplier is None:
+            print(f"❌ Unit conversion failed")
             return {
                 "status": "error",
                 "error": f"Unit '{unit}' not supported. Try: {food.serving_unit}"
             }, 400
         
-        actual_calories = int(food.default_calories * serving_multiplier)
-        actual_protein = food.protein_g * serving_multiplier
-        actual_carbs = food.carbs_g * serving_multiplier
-        actual_fats = food.fats_g * serving_multiplier
+        print(f"✅ Serving multiplier: {serving_multiplier}")
         
+        # Calculate actual nutrition
+        actual_calories = int(food.default_calories * serving_multiplier)
+        actual_protein = food.protein_g * serving_multiplier if food.protein_g else 0
+        actual_carbs = food.carbs_g * serving_multiplier if food.carbs_g else 0
+        actual_fats = food.fats_g * serving_multiplier if food.fats_g else 0
+        
+        print(f"✅ Calculated:")
+        print(f"   Calories: {actual_calories}")
+        print(f"   Protein: {actual_protein}g")
+        print(f"   Carbs: {actual_carbs}g")
+        print(f"   Fats: {actual_fats}g")
+        
+        # Create log entry
         log = FoodLog(
             user_id=user_id,
             meal_type=meal_type,
@@ -135,10 +241,16 @@ def log_meal(
         db.commit()
         db.refresh(log)
         
+        print(f"✅ Logged to database: ID {log.id}")
+        
+        # Get totals
         remaining = get_remaining_calories(db, user_id, date.today())
         consumed = get_consumed_today(db, user_id)
         target = calculate_daily_calories(user.goal)["total"]
         message = handle_meal_response(consumed, target)
+        
+        print(f"✅ Consumed today: {consumed} / {target}")
+        print(f"✅ Remaining: {remaining}")
         
         return {
             "status": "success",
@@ -146,6 +258,9 @@ def log_meal(
             "input": f"{quantity} {unit}",
             "standard_serving": food.serving_description,
             "actual_calories": actual_calories,
+            "actual_protein": round(actual_protein, 1),
+            "actual_carbs": round(actual_carbs, 1),
+            "actual_fats": round(actual_fats, 1),
             "meal_type": meal_type,
             "consumed_total": consumed,
             "remaining": remaining,
@@ -153,8 +268,13 @@ def log_meal(
         }
     
     except Exception as e:
+        print(f"❌ Exception: {str(e)}")
         return {"status": "error", "error": str(e)}, 500
 
+
+# ============================================================
+# DAILY STATUS ENDPOINT
+# ============================================================
 
 @router.get("/daily-status")
 def get_daily_status(user_id: int, date_obj: date = None, db: Session = Depends(get_db)):
@@ -164,9 +284,14 @@ def get_daily_status(user_id: int, date_obj: date = None, db: Session = Depends(
         if not date_obj:
             date_obj = date.today()
         
+        print(f"\n📊 Status request for user {user_id} on {date_obj}")
+        
         user = db.query(User).get(user_id)
         if not user:
+            print(f"❌ User not found: {user_id}")
             return {"status": "error", "error": "User not found"}, 404
+        
+        print(f"✅ User found: {user.name}")
         
         summary = create_or_update_daily_summary(db, user_id, date_obj)
         
@@ -174,6 +299,8 @@ def get_daily_status(user_id: int, date_obj: date = None, db: Session = Depends(
             FoodLog.user_id == user_id,
             func.date(FoodLog.logged_at) == date_obj
         ).all()
+        
+        print(f"✅ Found {len(logs)} meals logged")
         
         by_meal_type = {}
         targets = calculate_daily_calories(user.goal)
@@ -208,23 +335,37 @@ def get_daily_status(user_id: int, date_obj: date = None, db: Session = Depends(
         }
     
     except Exception as e:
+        print(f"❌ Exception: {str(e)}")
         return {"status": "error", "error": str(e)}, 500
 
+
+# ============================================================
+# SUGGEST MEAL ENDPOINT
+# ============================================================
 
 @router.get("/suggest-next-meal")
 def suggest_next_meal(user_id: int, db: Session = Depends(get_db)):
     """Get smart meal suggestions for right now"""
     
     try:
+        print(f"\n💡 Suggestion request for user {user_id}")
+        
         user = db.query(User).get(user_id)
         if not user:
+            print(f"❌ User not found: {user_id}")
             return {"status": "error", "error": "User not found"}, 404
+        
+        print(f"✅ User found: {user.name}")
         
         targets = calculate_daily_calories(user.goal)
         meal_type = get_current_meal_type()
         target_cal = targets[meal_type]
         
+        print(f"✅ Current meal type: {meal_type} (target: {target_cal} cal)")
+        
         suggestions = suggest_meals_for_type(db, meal_type, user.diet_type, target_cal)
+        
+        print(f"✅ Found {len(suggestions)} suggestions")
         
         return {
             "status": "success",
@@ -246,4 +387,5 @@ def suggest_next_meal(user_id: int, db: Session = Depends(get_db)):
         }
     
     except Exception as e:
+        print(f"❌ Exception: {str(e)}")
         return {"status": "error", "error": str(e)}, 500

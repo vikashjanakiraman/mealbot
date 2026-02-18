@@ -1,4 +1,4 @@
-"""Telegram Bot (COMPLETE - No Hardcodings, Captures User Profile)"""
+"""Telegram Bot (COMPLETE - Captures User Profile and Registers in Database)"""
 
 from fastapi import APIRouter, Request
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, Bot
@@ -172,16 +172,48 @@ async def webhook(request: Request):
                     user["height"] = height
                     set_user_step(user_id, None)
                     
-                    print(f"✅ Profile saved for user {user_id}:")
+                    print(f"✅ Profile captured for user {user_id}:")
                     print(f"   Name: {user['name']}")
                     print(f"   Age: {user['age']}")
                     print(f"   Weight: {user['weight']} kg")
                     print(f"   Height: {user['height']} cm")
                     
-                    await send_message(
-                        chat_id,
-                        f"✅ Profile saved!\n\n{user['name']}, you're all set!\n\nNow use /plan to create your meal plan! 🎯"
-                    )
+                    # ✅ NOW REGISTER USER IN DATABASE
+                    async with httpx.AsyncClient() as client:
+                        try:
+                            print(f"📡 Calling /register-user API...")
+                            resp = await client.post(
+                                f"{API_URL}/register-user",
+                                json={
+                                    "id": user_id,
+                                    "name": user["name"],
+                                    "age": user["age"],
+                                    "weight": user["weight"],
+                                    "height": user["height"]
+                                },
+                                timeout=30
+                            )
+                            
+                            if resp.status_code == 200:
+                                result = resp.json()
+                                print(f"✅ User registered: {result}")
+                                await send_message(
+                                    chat_id,
+                                    f"✅ Profile saved!\n\n{user['name']}, you're all set!\n\nNow use /plan to create your meal plan! 🎯"
+                                )
+                            else:
+                                print(f"❌ Registration failed: {resp.status_code}")
+                                print(f"   Response: {resp.text}")
+                                await send_message(
+                                    chat_id,
+                                    f"⚠️ Profile captured but registration failed. Please try /plan directly."
+                                )
+                        except Exception as e:
+                            print(f"❌ Registration error: {e}")
+                            await send_message(
+                                chat_id,
+                                f"⚠️ Profile captured but registration failed. Please try /plan directly."
+                            )
                 else:
                     await send_message(chat_id, "❌ Height should be 100-250 cm")
             except ValueError:
@@ -262,6 +294,7 @@ Use /plan to get started!"""
                     resp = await client.post(
                         f"{API_URL}/meal-plan",
                         json={
+                            "id": user_id,
                             "name": user["name"],        # ✅ REAL DATA
                             "age": user["age"],          # ✅ REAL DATA
                             "weight": user["weight"],    # ✅ REAL DATA
