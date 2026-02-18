@@ -1,4 +1,4 @@
-"""Telegram Bot (ROBUST – Handles List/Dict Response Formats)"""
+"""Telegram Bot (COMPLETE - No Hardcodings, Captures User Profile)"""
 
 from fastapi import APIRouter, Request
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, Bot
@@ -25,6 +25,7 @@ bot = Bot(token=TELEGRAM_TOKEN)
 
 # State storage
 user_state = {}
+user_data = {}  # Store user profile data
 
 
 def get_user_state(user_id: int) -> dict:
@@ -39,6 +40,18 @@ def get_user_state(user_id: int) -> dict:
             "quantity": None,
         }
     return user_state[user_id]
+
+
+def get_user_data(user_id: int) -> dict:
+    """Get stored user data (name, age, weight, height)"""
+    if user_id not in user_data:
+        user_data[user_id] = {
+            "name": None,
+            "age": None,
+            "weight": None,
+            "height": None,
+        }
+    return user_data[user_id]
 
 
 def set_user_step(user_id: int, step: str):
@@ -60,33 +73,14 @@ async def send_message(chat_id: int, text: str, reply_markup=None):
         print(f"❌ Send error: {str(e)}")
 
 
-# ============================================================
-# HELPER: Safe Response Parsing
-# ============================================================
 def safe_get_response(response_data):
-    """
-    Handle both dict and list responses gracefully
-    
-    Returns: dict if valid, None if error
-    """
-    print(f"📥 Raw response type: {type(response_data)}")
-    print(f"📥 Raw response: {response_data}")
-    
-    # If it's a list, take first element
+    """Handle both dict and list responses gracefully"""
     if isinstance(response_data, list):
-        print(f"⚠️  Response is LIST, taking first element")
         if len(response_data) > 0:
             return response_data[0]
-        else:
-            return None
-    
-    # If it's a dict, return as-is
+        return None
     if isinstance(response_data, dict):
-        print(f"✅ Response is DICT")
         return response_data
-    
-    # Unexpected format
-    print(f"❌ Unexpected format: {type(response_data)}")
     return None
 
 
@@ -113,19 +107,90 @@ async def webhook(request: Request):
         print(f"📨 {first_name} ({user_id}): {text}")
 
         state = get_user_state(user_id)
+        user = get_user_data(user_id)
         step = state.get("step")
 
         # ============================================================
-        # ROOT COMMANDS
+        # /START - USER PROFILE CAPTURE
         # ============================================================
 
         if text == "/start":
             set_user_step(user_id, None)
-            await send_message(
-                chat_id,
-                f"🍽️ Welcome {first_name}!\n\nI help you:\n✅ Create meal plans\n✅ Log meals\n✅ Track calories\n\nUse /help for commands!"
-            )
+            
+            # Check if user already has profile
+            if user["name"]:
+                await send_message(
+                    chat_id,
+                    f"🍽️ Welcome back, {user['name']}!\n\nReady to plan or log meals?\n\nUse /help for commands!"
+                )
+            else:
+                # Start profile capture
+                set_user_step(user_id, "start_name")
+                await send_message(
+                    chat_id,
+                    f"🍽️ Welcome {first_name}!\n\nLet's set up your profile!\n\n👤 What's your name?"
+                )
             return {"ok": True}
+
+        # Profile capture steps
+        elif step == "start_name":
+            user["name"] = text
+            set_user_step(user_id, "start_age")
+            await send_message(chat_id, "📅 How old are you? (15-100)")
+            return {"ok": True}
+
+        elif step == "start_age":
+            try:
+                age = int(text)
+                if 15 <= age <= 100:
+                    user["age"] = age
+                    set_user_step(user_id, "start_weight")
+                    await send_message(chat_id, "⚖️ Weight (in kg)? (30-300)")
+                else:
+                    await send_message(chat_id, "❌ Age should be 15-100")
+            except ValueError:
+                await send_message(chat_id, "❌ Please enter a number")
+            return {"ok": True}
+
+        elif step == "start_weight":
+            try:
+                weight = float(text)
+                if 30 <= weight <= 300:
+                    user["weight"] = weight
+                    set_user_step(user_id, "start_height")
+                    await send_message(chat_id, "📏 Height (in cm)? (100-250)")
+                else:
+                    await send_message(chat_id, "❌ Weight should be 30-300 kg")
+            except ValueError:
+                await send_message(chat_id, "❌ Please enter a number")
+            return {"ok": True}
+
+        elif step == "start_height":
+            try:
+                height = float(text)
+                if 100 <= height <= 250:
+                    user["height"] = height
+                    set_user_step(user_id, None)
+                    
+                    print(f"✅ Profile saved for user {user_id}:")
+                    print(f"   Name: {user['name']}")
+                    print(f"   Age: {user['age']}")
+                    print(f"   Weight: {user['weight']} kg")
+                    print(f"   Height: {user['height']} cm")
+                    
+                    await send_message(
+                        chat_id,
+                        f"✅ Profile saved!\n\n{user['name']}, you're all set!\n\nNow use /plan to create your meal plan! 🎯"
+                    )
+                else:
+                    await send_message(chat_id, "❌ Height should be 100-250 cm")
+            except ValueError:
+                await send_message(chat_id, "❌ Please enter a number")
+            return {"ok": True}
+
+        # ============================================================
+        # ROOT COMMANDS
+        # ============================================================
 
         elif text == "/help":
             await send_message(
@@ -141,11 +206,16 @@ Use /plan to get started!"""
             )
             return {"ok": True}
 
+        # Check if user has profile before proceeding
+        if not user["name"]:
+            await send_message(chat_id, "⚠️ Please use /start first to set up your profile!")
+            return {"ok": True}
+
         # ============================================================
         # PLAN FLOW
         # ============================================================
 
-        elif text == "/plan":
+        if text == "/plan":
             set_user_step(user_id, "plan_goal")
             reply_keyboard = [["Weight Loss", "Muscle Gain"], ["Maintenance"]]
             await send_message(
@@ -180,17 +250,22 @@ Use /plan to get started!"""
             allergies = [] if text.lower() == "none" else [a.strip() for a in text.split(",")]
             state["allergies"] = allergies
 
-            # Call API to create plan
+            # Call API with REAL user data (NOT hardcoded!)
             async with httpx.AsyncClient() as client:
                 try:
-                    print(f"\n📡 Calling /meal-plan API")
+                    print(f"\n📡 Calling /meal-plan API with real user data:")
+                    print(f"   Name: {user['name']}")
+                    print(f"   Age: {user['age']}")
+                    print(f"   Weight: {user['weight']}")
+                    print(f"   Height: {user['height']}")
+                    
                     resp = await client.post(
                         f"{API_URL}/meal-plan",
                         json={
-                            "name": first_name,
-                            "age": 28,
-                            "weight": 75,
-                            "height": 180,
+                            "name": user["name"],        # ✅ REAL DATA
+                            "age": user["age"],          # ✅ REAL DATA
+                            "weight": user["weight"],    # ✅ REAL DATA
+                            "height": user["height"],    # ✅ REAL DATA
                             "diet_type": state["diet_type"],
                             "goal": state["goal"],
                             "allergies": allergies,
@@ -198,8 +273,6 @@ Use /plan to get started!"""
                         timeout=30
                     )
 
-                    print(f"Status: {resp.status_code}")
-                    
                     if resp.status_code == 200:
                         plan_data = resp.json()
                         plan = safe_get_response(plan_data)
@@ -231,7 +304,7 @@ Use /plan to get started!"""
 Use /log to start logging! 📝"""
                             await send_message(chat_id, message)
                         else:
-                            await send_message(chat_id, f"❌ Invalid response format from API")
+                            await send_message(chat_id, f"❌ Invalid response from API")
                     else:
                         await send_message(chat_id, f"❌ API Error {resp.status_code}")
                         
@@ -299,7 +372,6 @@ Use /log to start logging! 📝"""
             print(f"\n🔥 Logging meal for user {user_id}")
             print(f"   Meal: {state['meal_type']} - {state['food_name']} - {state['quantity']} {text}")
             
-            # Log the meal via API
             async with httpx.AsyncClient() as client:
                 try:
                     print(f"📡 Calling /log-meal API")
@@ -339,11 +411,10 @@ Remaining: {result.get('remaining', '?')} cal
                             await send_message(chat_id, message)
                             print(f"✅ Meal logged successfully!")
                         else:
-                            await send_message(chat_id, f"❌ Invalid response format from API. Got: {type(log_data)}")
-                            print(f"❌ Response format error: {log_data}")
+                            await send_message(chat_id, f"❌ Invalid response format")
+                            print(f"❌ Response: {log_data}")
                     else:
                         await send_message(chat_id, f"❌ API Error {resp.status_code}: {resp.text[:100]}")
-                        print(f"❌ API Error: {resp.status_code}")
                         
                 except Exception as e:
                     print(f"❌ Exception: {str(e)}")
@@ -353,7 +424,7 @@ Remaining: {result.get('remaining', '?')} cal
             return {"ok": True}
 
         # ============================================================
-        # STATUS & SUGGEST
+        # STATUS
         # ============================================================
 
         elif text == "/status":
